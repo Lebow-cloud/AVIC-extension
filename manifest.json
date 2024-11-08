@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AVI",
+  "name": "AV-IA",
   "version": "1.0",
   "description": "Assistencia virtual per la ciutadania",
   "permissions": ["alarms", "scripting", "activeTab"],
