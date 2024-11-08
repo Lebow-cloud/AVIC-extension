@@ -9,7 +9,7 @@
   "permissions": ["scripting", "activeTab"],
   "host_permissions": ["https://web.gencat.cat/*"],
   "background": {
-    "service_worker": "js/tab/tab.js"
+    "scripts": ["js/tab/tab.js"]
   },
   "browser_action": {
     "default_icon": "images/icon_32.png",
@@ -18,7 +18,7 @@
   "content_scripts": [
     {
       "matches": ["https://web.gencat.cat/*"],
-      "all_frames": true,
+      "js": ["js/tab/content.js"],  
       "css": ["styles/tab/styles.css"]
     }
   ]
