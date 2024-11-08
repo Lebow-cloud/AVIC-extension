@@ -1,0 +1,27 @@
+
+{
+    "manifest_version": 2,
+    "name": "AVI",
+    "description": "Assistent virtual per millorar l'atenció i l'informació ciutadana complementari al 112",
+    "version": "2.3",
+    "icons": {
+      "32": "images/icon_32.png"
+    },
+    "permissions": [
+      "",
+      "file:///*/*"
+    ],
+    "browser_action": {
+      "default_icon": "images/icon_32.png",
+      "default_popup": "popup/popup.html"
+    },
+    "content_scripts": [
+      {
+        "matches": [ "http://*/*", "https://*/*", "file:///*/*"],
+        "all_frames": true,
+        "css": ["styles/tab/styles.css"]
+      }
+    ]
+   }
+   
+   
