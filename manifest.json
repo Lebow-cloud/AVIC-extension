@@ -17,7 +17,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*", "file:///*/*"],
+      "matches": ["https://web.gencat.cat/*"],
       "all_frames": true,
       "css": ["styles/tab/styles.css"]
     }
