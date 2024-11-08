@@ -1,2 +1,0 @@
-# aina-hack-front
-test

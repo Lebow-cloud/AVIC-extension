@@ -1,25 +1,34 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "AVI",
-  "description": "Assistent virtual per millorar l'atenció i l'informació ciutadana complementari al 112",
-  "version": "2.3",
-  "icons": {
-    "32": "images/icon_32.png"
-  },
-  "permissions": ["scripting", "activeTab"],
-  "host_permissions": ["https://web.gencat.cat/*"],
+  "version": "1.0",
+  "description": "Assistencia virtual per la ciutadania",
+  "permissions": ["alarms", "scripting", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+
   "background": {
-    "scripts": ["js/tab/tab.js"]
+    "service_worker": "background.js"
   },
-  "browser_action": {
-    "default_icon": "images/icon_32.png",
-    "default_popup": "popup/popup.html"
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "23": "images/icon.png",
+      "32": "images/icon.png",
+      "48": "images/icon.png",
+      "128": "images/icon.png"
+    }
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["images/icon.png"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": ["https://web.gencat.cat/*"],
-      "js": ["js/tab/content.js"],  
-      "css": ["styles/tab/styles.css"]
+      "js": ["js/content.js", "js/highlight.js"],
+      "css": ["styles/modal.css"]
     }
   ]
 }

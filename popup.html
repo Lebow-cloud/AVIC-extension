@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Introducir Código</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 10px;
+      width: 300px;
+    }
+    input {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 5px 10px;
+      width: 100%;
+    }
+    #mensaje {
+      margin-top: 10px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>Introducir Código</h1>
+  <input type="text" id="codigo" placeholder="Introduce tu código" />
+  <button id="enviar">Enviar</button>
+  <div id="mensaje"></div>
+
+  <script>
+    // Capturamos el evento del botón
+    document.getElementById('enviar').addEventListener('click', () => {
+      const codigo = document.getElementById('codigo').value;
+
+      if (codigo.trim() === "") {
+        alert("Por favor, introduce un código válido.");
+        return;
+      }
+
+      // Muestra un mensaje de éxito
+      const mensaje = document.getElementById('mensaje');
+      mensaje.textContent = `El código "${codigo}" se ha enviado correctamente.`;
+
+      // Enviar el código al background.js si es necesario
+      chrome.runtime.sendMessage({ tipo: "codigoIntroducido", codigo }, (response) => {
+        console.log("Respuesta del background:", response);
+      });
+
+      // Limpia el campo de entrada
+      document.getElementById('codigo').value = "";
+    });
+  </script>
+</body>
+</html>
