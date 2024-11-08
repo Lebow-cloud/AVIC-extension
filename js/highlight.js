@@ -1,5 +1,4 @@
 let currentElement = null; // Currently highlighted element
-let overlay = null; // Overlay for fade effect
 
 // Function to find an element by XPath
 function findElementByXPath(xpathExpression) {
@@ -13,48 +12,41 @@ function findElementByXPath(xpathExpression) {
   return result.singleNodeValue;
 }
 
-// Function to create overlay for fade effect
-function createOverlay() {
-  overlay = document.createElement("div");
-  overlay.style.position = "fixed";
-  overlay.style.top = "0";
-  overlay.style.left = "0";
-  overlay.style.width = "100%";
-  overlay.style.height = "100%";
-  overlay.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-  overlay.style.zIndex = "9999";
-  overlay.style.pointerEvents = "none"; // Prevent interaction with the overlay
-  document.body.appendChild(overlay);
-}
-
-// Function to highlight an element with a white circle
+// Function to highlight an element with a white oval
 function highlightElement(element) {
-  if (!overlay) {
-    createOverlay();
+  // Remove previous highlight if it exists
+  if (currentElement) {
+    removeHighlight();
   }
 
   const rect = element.getBoundingClientRect();
-  const circle = document.createElement("div");
+  const oval = document.createElement("div");
 
-  circle.style.position = "absolute";
-  circle.style.width = `${rect.width + 20}px`; // Add padding to the circle
-  circle.style.height = `${rect.height + 20}px`;
-  circle.style.border = "2px solid white";
-  circle.style.borderRadius = "50%";
-  circle.style.boxShadow = "0 0 15px 5px white";
-  circle.style.top = `${rect.top - 10 + window.scrollY}px`;
-  circle.style.left = `${rect.left - 10 + window.scrollX}px`;
-  circle.style.pointerEvents = "none"; // Prevent interaction with the circle
-  circle.style.zIndex = "10000";
+  // Styling the oval
+  oval.style.position = "absolute";
+  oval.style.width = `${rect.width + 40}px`; // Add padding to the oval
+  oval.style.height = `${rect.height + 20}px`;
+  oval.style.border = "2px solid black";
+  oval.style.borderRadius = "50%";
+  oval.style.boxShadow = "0 0 15px 5px white";
+  oval.style.backgroundColor = "transparent";
+  oval.style.top = `${rect.top - 10 + window.scrollY}px`;
+  oval.style.left = `${rect.left - 20 + window.scrollX}px`;
+  oval.style.pointerEvents = "none"; // Prevent interaction with the oval
+  oval.style.zIndex = "10000";
 
-  overlay.appendChild(circle);
+  // Append the oval directly to the body
+  document.body.appendChild(oval);
+
+  // Save reference for removal later
+  currentElement = oval;
 }
 
-// Function to remove highlighting and overlay
+// Function to remove highlighting
 function removeHighlight() {
-  if (overlay) {
-    overlay.remove();
-    overlay = null;
+  if (currentElement) {
+    currentElement.remove();
+    currentElement = null;
   }
 }
 
@@ -67,12 +59,8 @@ function handleStep(step) {
   const node = findElementByXPath(x_path);
 
   if (node) {
-    // Remove previous highlight
-    removeHighlight();
-
     // Highlight the new element
     highlightElement(node);
-    currentElement = node;
 
     // Add click event to advance
     node.addEventListener("click", () => {
@@ -97,7 +85,6 @@ function handleStep(step) {
 
         // Highlight the element
         highlightElement(newNode);
-        currentElement = newNode;
 
         newNode.addEventListener("click", () => {
           sendMessageToWebSocket({
