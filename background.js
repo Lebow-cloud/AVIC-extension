@@ -6,12 +6,16 @@ function connectWebSocket() {
   if (isReconnecting) return;
   console.log("Intentando conectar al WebSocket...");
 
-  socket = new WebSocket("ws://120.86.175.34.bc.googleusercontent.com/extension");
+  socket = new WebSocket(
+    "ws://120.86.175.34.bc.googleusercontent.com/extension"
+  );
 
   socket.onopen = () => {
     console.log("WebSocket conectado");
     isReconnecting = false;
-    socket.send(JSON.stringify({ type: "greeting", message: "Hola desde la extensión!" }));
+    socket.send(
+      JSON.stringify({ type: "greeting", message: "Hola desde la extensión!" })
+    );
   };
 
   socket.onmessage = (event) => {
@@ -19,12 +23,16 @@ function connectWebSocket() {
 
     try {
       const message = JSON.parse(event.data);
+      console.log(message);
       if (message.x_path) {
         // Envía el mensaje al content script
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs.length > 0) {
-            chrome.tabs.sendMessage(tabs[0].id, { action: "highlight", x_path: message.x_path });
-          }
+        chrome.tabs.query({}, (tabs) => {
+          tabs.forEach((tab) => {
+            chrome.tabs.sendMessage(tab.id, {
+              action: "highlight",
+              x_path: message.x_path,
+            });
+          });
         });
       }
     } catch (e) {

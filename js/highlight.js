@@ -1,7 +1,9 @@
 let currentElement = null; // Elemento actualmente resaltado
+console.log("ENTRO HIGHTHHG");
 
 // Escucha mensajes enviados desde el background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("message", message);
   if (message.action === "highlight") {
     const xPath = message.x_path;
     console.log(`Procesando paso para x_path: ${xPath}`);

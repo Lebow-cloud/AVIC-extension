@@ -1,4 +1,5 @@
 // Crear un botón flotante como imagen
+console.log("CARGO CONTENT");
 const botonFlotante = document.createElement("img");
 botonFlotante.src = chrome.runtime.getURL("images/icon.png");
 botonFlotante.alt = "Abrir Modal";
