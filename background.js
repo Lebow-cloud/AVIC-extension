@@ -26,6 +26,7 @@ function connectWebSocket() {
         // Envía el mensaje al content script
         chrome.tabs.query({}, (tabs) => {
           tabs.forEach((tab) => {
+            // console.log(tab.id);
             chrome.tabs.sendMessage(tab.id, {
               action: "highlight",
               x_path: message.x_path,
@@ -56,6 +57,8 @@ connectWebSocket();
 
 // Manejo de mensajes desde el Content Script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("MESSAGE RECEIVED",message);
+  
   if (message.type === "verificarWebSocket") {
     // Verifica si el WebSocket está conectado
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -65,9 +68,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.warn("WebSocket no conectado");
       sendResponse({ status: "WebSocket no conectado" });
     }
-  } else if (message.type === "sendToWebSocket") {
+  } else if (message.action === "sendToWebSocket") {
+    console.log("send to backend", message.data);
+    
     // Enviar datos al WebSocket
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    if (true) {
+    // if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message.data));
       console.log("Mensaje enviado al WebSocket:", message.data);
       sendResponse({ status: "Mensaje enviado al WebSocket" });

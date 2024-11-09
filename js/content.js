@@ -2,6 +2,7 @@ console.log("CARGO CONTENT");
 
 // Variable global para manejar el elemento resaltado
 let currentElement = null;
+let pathCreator = false;
 
 // Crear un botón flotante como imagen
 const botonFlotante = document.createElement("img");
@@ -35,8 +36,19 @@ dropdown.style.opacity = "0";
 dropdown.style.transform = "scale(0.95)"; // Efecto de contracción inicial
 
 // Contenido del dropdown
+// dropdown.innerHTML = `
+//   <h2 style="margin-top: 0; margin-bottom: 12px; font-size: 18px; color: #333;">Introduce el Código</h2>
+//   <input type="text" id="codigo" placeholder="Introduce tu código"
+//     style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
+//   <button id="enviar"
+//     style="padding: 10px; width: 100%; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
+//     Enviar
+//   </button>
+//   <div id="mensaje" style="margin-top: 10px; color: green; font-size: 14px;"></div>
+// `;
+
 dropdown.innerHTML = `
-  <h2 style="margin-top: 0; margin-bottom: 12px; font-size: 18px; color: #333;">Introduce el Código</h2>
+  <h2 style="margin-top: 0; margin-bottom: 12px; font-size: 18px; color: #333;">Creador de Paths</h2>
   <input type="text" id="codigo" placeholder="Introduce tu código" 
     style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
   <button id="enviar" 
@@ -45,6 +57,7 @@ dropdown.innerHTML = `
   </button>
   <div id="mensaje" style="margin-top: 10px; color: green; font-size: 14px;"></div>
 `;
+
 document.body.appendChild(dropdown);
 
 // Mostrar el dropdown al hacer clic en el botón flotante
@@ -60,12 +73,72 @@ botonFlotante.addEventListener("click", () => {
   }
 });
 
+function getXPath(element) {
+  if (element.id) {
+    return `//*[@id="${element.id}"]`; // Usa el ID si está presente
+  }
+
+  const parts = [];
+  while (element && element.nodeType === Node.ELEMENT_NODE) {
+    let index = 0;
+    let sibling = element.previousSibling;
+    while (sibling) {
+      if (
+        sibling.nodeType === Node.ELEMENT_NODE &&
+        sibling.nodeName === element.nodeName
+      ) {
+        index++;
+      }
+      sibling = sibling.previousSibling;
+    }
+    const tagName = element.nodeName.toLowerCase();
+    const part = index ? `${tagName}[${index + 1}]` : tagName;
+    parts.unshift(part);
+    element = element.parentNode;
+  }
+  if (pathCreator) {
+    createNewPath(`/${parts.join("/")}`);
+  }
+  return `/${parts.join("/")}`;
+}
+
 // Cerrar el dropdown al hacer clic fuera
 document.addEventListener("click", (event) => {
   if (!dropdown.contains(event.target) && event.target !== botonFlotante) {
     closeDropdown();
   }
+  const element = event.target;
+  const xpath = getXPath(element);
+  navigator.clipboard.writeText(xpath).then(() => {
+    console.log("Texto copiado al portapapeles");
+  });
+
+  console.log("XPath del clic:", xpath);
+  removeHighlight();
+
+  // const calculatedElement=  findElementByXPath( xpath);
+  //   console.log("Elemento encontrado:", calculatedElement);
+  //   setTimeout(() => {
+
+  //      (calculatedElement)
+  //   },2000)
+
+  chrome.runtime.sendMessage(
+    { action: "sendToWebSocket", data: { x_path: xpath } },
+    (response) => {
+      console.log("Respuesta del background:", response);
+    }
+  );
 });
+
+// element.addEventListener("click", () => {
+//   chrome.runtime.sendMessage(
+//     { action: "sendToWebSocket", data: { x_path } },
+//     (response) => {
+//       console.log("Respuesta del background:", response);
+//     }
+//   );
+// });
 
 // Función para cerrar el dropdown
 function closeDropdown() {
@@ -85,22 +158,29 @@ document.getElementById("enviar").addEventListener("click", () => {
   }
   const mensaje = document.getElementById("mensaje");
   mensaje.textContent = `El código "${codigo}" se ha enviado correctamente.`;
-  enviarMensaje({ type: "codigoIntroducido", codigo });
+  pathCreator = true;
   document.getElementById("codigo").value = "";
 });
 
+const learnedXpaths = [];
+
+function createNewPath(path) {
+  if (!pathCreator) {
+    return;
+  }
+  learnedXpaths.push(path);
+  console.log("APRENDIENDO", learnedXpaths);
+}
+
 // Función para enviar un mensaje al background.js
 function enviarMensaje(data) {
-  chrome.runtime.sendMessage(
-    { type: "sendToWebSocket", data },
-    (response) => {
-      if (response.status === "Mensaje enviado al WebSocket") {
-        console.log("Mensaje enviado:", data);
-      } else {
-        console.error("Error al enviar mensaje:", response.status);
-      }
+  chrome.runtime.sendMessage({ type: "sendToWebSocket", data }, (response) => {
+    if (response.status === "Mensaje enviado al WebSocket") {
+      console.log("Mensaje enviado:", data);
+    } else {
+      console.error("Error al enviar mensaje:", response.status);
     }
-  );
+  });
 }
 
 // Escucha mensajes enviados desde el background script para resaltar elementos
@@ -110,13 +190,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const xPath = message.x_path;
     const element = findElementByXPath(xPath);
     if (element) {
-      highlightElement(element, xPath);
+      setTimeout(() => {
+        highlightElement(element);
+      }, 1000);
     } else {
-      console.warn(`Elemento no encontrado para x_path: ${xPath}. Observando cambios...`);
+      console.warn(
+        `Elemento no encontrado para x_path: ${xPath}. Observando cambios...`
+      );
       const observer = new MutationObserver(() => {
         const newElement = findElementByXPath(xPath);
         if (newElement) {
-          highlightElement(newElement, xPath);
+          highlightElement(newElement);
           observer.disconnect();
         }
       });
@@ -138,19 +222,21 @@ function findElementByXPath(xpathExpression) {
 }
 
 // Función para resaltar un elemento
-function highlightElement(element, x_path) {
+function highlightElement(element) {
   if (currentElement) {
     removeHighlight();
   }
+  element.scrollIntoView({
+    block: "center",
+  });
   const rect = element.getBoundingClientRect();
   const oval = document.createElement("div");
   Object.assign(oval.style, {
     position: "absolute",
-    width: `${rect.width + 40}px`,
-    height: `${rect.height + 20}px`,
-    border: "2px solid red",
-    borderRadius: "50%",
-    boxShadow: "0 0 20px 5px rgba(255, 0, 0, 0.8)",
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    borderRadius: "0%",
+    boxShadow: "0 0 20px 5px rgba(255, 255, 0, 0.8)",
     backgroundColor: "transparent",
     top: `${rect.top - 10 + window.scrollY}px`,
     left: `${rect.left - 20 + window.scrollX}px`,
@@ -159,16 +245,6 @@ function highlightElement(element, x_path) {
   });
   document.body.appendChild(oval);
   currentElement = oval;
-
-  element.addEventListener("click", () => {
-    chrome.runtime.sendMessage(
-      { action: "sendToWebSocket", data: { x_path } },
-      (response) => {
-        console.log("Respuesta del background:", response);
-      }
-    );
-    removeHighlight();
-  });
 }
 
 // Función para remover el highlight
