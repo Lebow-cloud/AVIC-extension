@@ -23,8 +23,6 @@ function connectWebSocket() {
 
     try {
       const message = JSON.parse(event.data);
-      console.log(message);
-      if (message.x_path) {
         // Envía el mensaje al content script
         chrome.tabs.query({}, (tabs) => {
           tabs.forEach((tab) => {
@@ -32,9 +30,9 @@ function connectWebSocket() {
               action: "highlight",
               x_path: message.x_path,
             });
+           
           });
         });
-      }
     } catch (e) {
       console.error("Error al parsear el mensaje:", e);
     }

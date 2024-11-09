@@ -3,7 +3,7 @@
   "name": "AV-IA",
   "version": "1.0",
   "description": "Assitent virtual per millorar l'atenció i l'informació ciutadana al 012",
-  "permissions": ["alarms", "scripting", "activeTab"],
+  "permissions": ["alarms", "scripting", "activeTab", "tabs"],
   "host_permissions": ["<all_urls>"],
 
   "background": {
@@ -27,7 +27,7 @@
   "content_scripts": [
     {
       "matches": ["https://web.gencat.cat/*"],
-      "js": ["js/content.js", "js/highlight.js"],
+      "js": ["js/content.js"],
       "css": ["styles/modal.css"]
     }
   ]

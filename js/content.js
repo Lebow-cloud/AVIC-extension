@@ -1,5 +1,9 @@
-// Crear un botón flotante como imagen
 console.log("CARGO CONTENT");
+
+// Variable global para manejar el elemento resaltado
+let currentElement = null;
+
+// Crear un botón flotante como imagen
 const botonFlotante = document.createElement("img");
 botonFlotante.src = chrome.runtime.getURL("images/icon.png");
 botonFlotante.alt = "Abrir Modal";
@@ -41,8 +45,6 @@ dropdown.innerHTML = `
   </button>
   <div id="mensaje" style="margin-top: 10px; color: green; font-size: 14px;"></div>
 `;
-
-// Agregar el dropdown al DOM
 document.body.appendChild(dropdown);
 
 // Mostrar el dropdown al hacer clic en el botón flotante
@@ -52,7 +54,7 @@ botonFlotante.addEventListener("click", () => {
     setTimeout(() => {
       dropdown.style.opacity = "1";
       dropdown.style.transform = "scale(1)";
-    }, 10); // Pequeño retraso para aplicar la transición
+    }, 10);
   } else {
     closeDropdown();
   }
@@ -71,52 +73,108 @@ function closeDropdown() {
   dropdown.style.transform = "scale(0.95)";
   setTimeout(() => {
     dropdown.style.display = "none";
-  }, 300); // Esperar a que termine la transición
+  }, 300);
 }
 
 // Manejar el evento del botón "Enviar"
 document.getElementById("enviar").addEventListener("click", () => {
   const codigo = document.getElementById("codigo").value;
-
   if (codigo.trim() === "") {
     alert("Por favor, introduce un código válido.");
     return;
   }
-
   const mensaje = document.getElementById("mensaje");
-  mensaje.textContent = `El codi "${codigo}" s'ha enviat correctament.`;
-
-  // Enviar el código al background.js
+  mensaje.textContent = `El código "${codigo}" se ha enviado correctamente.`;
   enviarMensaje({ type: "codigoIntroducido", codigo });
-
   document.getElementById("codigo").value = "";
 });
 
-// Función para enviar un mensaje al WebSocket
+// Función para enviar un mensaje al background.js
 function enviarMensaje(data) {
-  verificarWebSocket(() => {
-    chrome.runtime.sendMessage(
-      { type: "sendToWebSocket", data },
-      (response) => {
-        if (response.status === "Mensaje enviado al WebSocket") {
-          console.log("Mensaje enviado:", data);
-        } else {
-          console.error("Error al enviar mensaje:", response.status);
+  chrome.runtime.sendMessage(
+    { type: "sendToWebSocket", data },
+    (response) => {
+      if (response.status === "Mensaje enviado al WebSocket") {
+        console.log("Mensaje enviado:", data);
+      } else {
+        console.error("Error al enviar mensaje:", response.status);
+      }
+    }
+  );
+}
+
+// Escucha mensajes enviados desde el background script para resaltar elementos
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("Mensaje recibido:", message);
+  if (message.action === "highlight") {
+    const xPath = message.x_path;
+    const element = findElementByXPath(xPath);
+    if (element) {
+      highlightElement(element, xPath);
+    } else {
+      console.warn(`Elemento no encontrado para x_path: ${xPath}. Observando cambios...`);
+      const observer = new MutationObserver(() => {
+        const newElement = findElementByXPath(xPath);
+        if (newElement) {
+          highlightElement(newElement, xPath);
+          observer.disconnect();
         }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+});
+
+// Función para buscar un elemento por XPath
+function findElementByXPath(xpathExpression) {
+  const result = document.evaluate(
+    xpathExpression,
+    document,
+    null,
+    XPathResult.FIRST_ORDERED_NODE_TYPE,
+    null
+  );
+  return result.singleNodeValue;
+}
+
+// Función para resaltar un elemento
+function highlightElement(element, x_path) {
+  if (currentElement) {
+    removeHighlight();
+  }
+  const rect = element.getBoundingClientRect();
+  const oval = document.createElement("div");
+  Object.assign(oval.style, {
+    position: "absolute",
+    width: `${rect.width + 40}px`,
+    height: `${rect.height + 20}px`,
+    border: "2px solid red",
+    borderRadius: "50%",
+    boxShadow: "0 0 20px 5px rgba(255, 0, 0, 0.8)",
+    backgroundColor: "transparent",
+    top: `${rect.top - 10 + window.scrollY}px`,
+    left: `${rect.left - 20 + window.scrollX}px`,
+    pointerEvents: "none",
+    zIndex: "10000",
+  });
+  document.body.appendChild(oval);
+  currentElement = oval;
+
+  element.addEventListener("click", () => {
+    chrome.runtime.sendMessage(
+      { action: "sendToWebSocket", data: { x_path } },
+      (response) => {
+        console.log("Respuesta del background:", response);
       }
     );
+    removeHighlight();
   });
 }
 
-// Función para verificar la conexión del WebSocket
-function verificarWebSocket(callback) {
-  chrome.runtime.sendMessage({ type: "verificarWebSocket" }, (response) => {
-    if (response && response.status === "WebSocket conectado") {
-      console.log("WebSocket conectado");
-      if (callback) callback();
-    } else {
-      console.error("WebSocket no conectado");
-      alert("WebSocket no está conectado. Intenta de nuevo más tarde.");
-    }
-  });
+// Función para remover el highlight
+function removeHighlight() {
+  if (currentElement) {
+    currentElement.remove();
+    currentElement = null;
+  }
 }
